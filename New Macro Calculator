@@ -1,0 +1,172 @@
+import matplotlib.pyplot as plt
+import ipywidgets as widgets
+from IPython.display import display, clear_output, HTML
+
+# Add custom CSS for better styling
+custom_css = """
+<style>
+.widget-label {
+    font-size: 16px;
+    font-weight: bold;
+}
+.int-slider {
+    width: 50%;
+    margin: auto;
+}
+.toggle-button {
+    font-size: 14px;
+    margin: 5px 0;
+}
+.output-area {
+    font-size: 20px; /* Increased font size */
+    font-weight: bold;
+    padding: 10px;
+    border: 2px solid #007bff;
+    border-radius: 10px;
+    background-color: #f0f8ff;
+}
+</style>
+"""
+
+# Constants for calorie calculation
+CALORIES_PER_GRAM_FAT = 9
+CALORIES_PER_GRAM_CARBS = 4
+CALORIES_PER_GRAM_PROTEIN = 4
+
+# Nutrient details
+nutrients = {
+    "chicken": {"calories": 165, "fat": 3.6, "protein": 31, "carbs": 0, "per_grams": 100},
+    "rice": {"calories": 160, "fat": 0, "protein": 3, "carbs": 36, "per_grams": 83},
+    "post_workout_shake": {"calories": 240, "fat": 4, "protein": 48, "carbs": 6},
+    "weight_gainer": {"calories": 750, "fat": 4.5, "protein": 49, "carbs": 145},
+    "casein_shake": {"calories": 240, "fat": 2, "protein": 48, "carbs": 8},
+    "bananas": {"calories": 315, "fat": 1.2, "protein": 3.9, "carbs": 81}
+}
+
+# Initial chicken and rice values
+initial_chicken_grams = 0
+initial_rice_grams = 0
+
+# Function to calculate nutrient values based on grams
+def calculate_nutrients(grams, food):
+    per_grams = nutrients[food]["per_grams"]
+    return {
+        "calories": round(nutrients[food]["calories"] * grams / per_grams),
+        "fat": round(nutrients[food]["fat"] * grams / per_grams, 1),
+        "protein": round(nutrients[food]["protein"] * grams / per_grams),
+        "carbs": round(nutrients[food]["carbs"] * grams / per_grams)
+    }
+
+# Create sliders for chicken and rice
+chicken_slider = widgets.IntSlider(value=initial_chicken_grams, min=0, max=1000, step=1, description='Chicken (g):', continuous_update=True, style={'description_width': 'initial'}, layout=widgets.Layout(width='50%'))
+rice_slider = widgets.IntSlider(value=initial_rice_grams, min=0, max=1000, step=1, description='Rice (g):', continuous_update=True, style={'description_width': 'initial'}, layout=widgets.Layout(width='50%'))
+
+# Create toggle buttons to lock nutrients
+def create_lock_button(description):
+    return widgets.ToggleButton(value=False, description=f'Lock {description}', disabled=False, button_style='primary', tooltip=f'Lock the {description.lower()} value', icon='lock', layout=widgets.Layout(width='150px'))
+
+lock_chicken = create_lock_button("Chicken")
+lock_rice = create_lock_button("Rice")
+lock_post_workout_shake = create_lock_button("Post Workout Shake")
+lock_weight_gainer = create_lock_button("Weight Gainer")
+lock_casein_shake = create_lock_button("Casein Shake")
+lock_bananas = create_lock_button("3 Bananas")
+
+# Function to calculate total calories
+def calculate_calories(protein, carbs, fat):
+    return protein * CALORIES_PER_GRAM_PROTEIN + carbs * CALORIES_PER_GRAM_CARBS + fat * CALORIES_PER_GRAM_FAT
+
+# Function to update the display
+def update_display(change):
+    chicken_grams = chicken_slider.value
+    rice_grams = rice_slider.value
+
+    chicken_nutrients = calculate_nutrients(chicken_grams, "chicken")
+    rice_nutrients = calculate_nutrients(rice_grams, "rice")
+
+    post_workout_shake_nutrients = nutrients["post_workout_shake"]
+    weight_gainer_nutrients = nutrients["weight_gainer"]
+    casein_shake_nutrients = nutrients["casein_shake"]
+    banana_nutrients = nutrients["bananas"]
+
+    def get_nutrient_value(nutrient, lock_button, food_nutrient):
+        return food_nutrient[nutrient] if not lock_button.value else 0
+
+    total_protein = sum([
+        get_nutrient_value("protein", lock_chicken, chicken_nutrients),
+        get_nutrient_value("protein", lock_rice, rice_nutrients),
+        get_nutrient_value("protein", lock_post_workout_shake, post_workout_shake_nutrients),
+        get_nutrient_value("protein", lock_weight_gainer, weight_gainer_nutrients),
+        get_nutrient_value("protein", lock_casein_shake, casein_shake_nutrients),
+        get_nutrient_value("protein", lock_bananas, banana_nutrients)
+    ])
+
+    total_carbs = sum([
+        get_nutrient_value("carbs", lock_chicken, chicken_nutrients),
+        get_nutrient_value("carbs", lock_rice, rice_nutrients),
+        get_nutrient_value("carbs", lock_post_workout_shake, post_workout_shake_nutrients),
+        get_nutrient_value("carbs", lock_weight_gainer, weight_gainer_nutrients),
+        get_nutrient_value("carbs", lock_casein_shake, casein_shake_nutrients),
+        get_nutrient_value("carbs", lock_bananas, banana_nutrients)
+    ])
+
+    total_fat = sum([
+        get_nutrient_value("fat", lock_chicken, chicken_nutrients),
+        get_nutrient_value("fat", lock_rice, rice_nutrients),
+        get_nutrient_value("fat", lock_post_workout_shake, post_workout_shake_nutrients),
+        get_nutrient_value("fat", lock_weight_gainer, weight_gainer_nutrients),
+        get_nutrient_value("fat", lock_casein_shake, casein_shake_nutrients),
+        get_nutrient_value("fat", lock_bananas, banana_nutrients)
+    ])
+
+    total_calories = sum([
+        get_nutrient_value("calories", lock_chicken, chicken_nutrients),
+        get_nutrient_value("calories", lock_rice, rice_nutrients),
+        get_nutrient_value("calories", lock_post_workout_shake, post_workout_shake_nutrients),
+        get_nutrient_value("calories", lock_weight_gainer, weight_gainer_nutrients),
+        get_nutrient_value("calories", lock_casein_shake, casein_shake_nutrients),
+        get_nutrient_value("calories", lock_bananas, banana_nutrients)
+    ])
+
+    with output:
+        clear_output(wait=True)
+        print(f"Protein: {total_protein}g\nCarbs: {total_carbs}g\nFat: {total_fat}g\n\nTotal Calories: {total_calories}")
+
+# Function to update sliders based on lock status
+def update_sliders(change):
+    chicken_slider.disabled = lock_chicken.value
+    rice_slider.disabled = lock_rice.value
+
+    for lock_button in [lock_chicken, lock_rice, lock_post_workout_shake, lock_weight_gainer, lock_casein_shake, lock_bananas]:
+        if lock_button.value:
+            lock_button.style.button_color = '#ff0000'
+        else:
+            lock_button.style.button_color = '#003366'
+
+    update_display(change)
+
+# Attach the update function to the sliders and toggle buttons
+chicken_slider.observe(update_display, names='value')
+rice_slider.observe(update_display, names='value')
+for lock_button in [lock_chicken, lock_rice, lock_post_workout_shake, lock_weight_gainer, lock_casein_shake, lock_bananas]:
+    lock_button.observe(update_sliders, names='value')
+
+# Create an output widget
+output = widgets.Output()
+
+# Display the custom CSS
+display(HTML(custom_css))
+
+# Display the sliders, toggle buttons, and the output
+display(
+    widgets.VBox([
+        chicken_slider,
+        rice_slider,
+        widgets.HBox([lock_chicken, lock_rice, lock_post_workout_shake, lock_weight_gainer, lock_casein_shake, lock_bananas]),
+        output
+    ])
+)
+
+# Initialize the display
+update_display(None)
+
